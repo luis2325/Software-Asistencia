@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Listado de Asistencias{% endblock %}
+{% block page_title %}Historial de Asistencias{% endblock %}
+{% block welcome_text %}Registros de entrada, salida y almuerzo (horario fijo){% endblock %}
+
+{% block content %}
+<div class="filtros-panel">
+    <div class="filtros-grid">
+        <div class="filtro-item">
+            <label class="filtro-label">Buscar (nombre)</label>
+            <input type="text" id="filterName" class="filtro-input" placeholder="Nombre o apellido">
+        </div>
+        <div class="filtro-item">
+            <label class="filtro-label">Estado</label>
+            <select id="filterStatus" class="filtro-select">
+                <option value="all">Todos</option>
+                <option value="Temprano">A tiempo</option>
+                <option value="Tarde">Retraso</option>
+            </select>
+        </div>
+        <div class="filtro-item">
+            <label class="filtro-label">Fecha</label>
+            <input type="date" id="filterDate" class="filtro-input">
+        </div>
+        <div class="filtro-item">
+            <button id="clearFilters" class="filtro-btn-limpiar">Limpiar</button>
+        </div>
+        <div class="filtro-item">
+            <button id="exportExcelBtn" class="filtro-btn-exportar">Exportar a Excel</button>
+        </div>
+    </div>
+    <div id="filterResultCount" class="filtro-contador"></div>
+</div>
+
+<div class="table-responsive">
+    <table class="data-table" id="asistenciaTable">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Fecha</th>
+                <th>Hora Entrada</th>
+                <th>Hora Salida</th>
+                <th>Estado</th>
+                <th>Salida Almuerzo</th>
+                <th>Regreso Almuerzo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in asistencia %}
+            <tr data-estado="{{ a[5] }}" data-fecha="{{ a[2] }}">
+                <td>{{ a[0] }}</td>
+                <td>{{ a[1] }}</td>
+                <td>{{ a[2] }}</td>
+                <td>{{ a[3] }}</td>
+                <td>{{ a[4] if a[4] else '--:--' }}</td>
+                <td>
+                    {% if a[5] == 'Temprano' %}
+                        <span class="estado-temprano">✓ A tiempo</span>
+                    {% else %}
+                        <span class="estado-retraso">⚠ Retraso</span>
+                    {% endif %}
+                </td>
+                <td class="almuerzo-salida">{{ salida_almuerzo }}</td>
+                <td class="almuerzo-regreso">{{ regreso_almuerzo }}</td>
+            </tr>
+            {% else %}
+            <tr id="noDataRow">
+                <td colspan="8">No hay registros de asistencia.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

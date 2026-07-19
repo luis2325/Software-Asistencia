@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Tomar Asistencia{% endblock %}
+{% block page_title %}Asistencia por Reconocimiento Facial{% endblock %}
+{% block welcome_text %}Coloque su rostro frente a la cámara{% endblock %}
+
+{% block content %}
+<div class="asistencia-container">
+    <div class="stat-card asistencia-card">
+        <i class="fas fa-video asistencia-icon"></i>
+        <p class="asistencia-text">
+            El sistema iniciará la cámara, detectará el rostro y registrará la asistencia automáticamente.
+        </p>
+        <form action="/tomar_asistencia" method="POST">
+            <button type="submit" class="btn-asistencia">
+                <i class="fas fa-play"></i> Iniciar Reconocimiento
+            </button>
+        </form>
+        <p class="asistencia-info">
+            <i class="fas fa-info-circle"></i> El proceso puede tardar unos segundos.
+        </p>
+    </div>
+</div>
+{% endblock %}

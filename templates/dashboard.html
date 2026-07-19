@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Asistencia Inteligente{% endblock %}
+{% block page_title %}Panel de Control{% endblock %}
+{% block welcome_text %}Bienvenido, {{ session.username }} — aquí tienes el resumen de hoy{% endblock %}
+
+{% block content %}
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header"><span class="stat-title">Registros totales</span><i class="fas fa-users stat-icon"></i></div>
+            <div class="stat-value" id="total-estudiantes">--</div>
+            {% if session.user_role == 'admin' %}
+            <div class="stat-trend" id="trend-total">Cargando...</div>
+            {% endif %}
+        </div>
+        <div class="stat-card">
+            <div class="stat-header"><span class="stat-title">Asistencias hoy</span><i class="fas fa-check-circle stat-icon"></i></div>
+            <div class="stat-value" id="asistencias-hoy">--</div>
+            <div class="stat-trend" id="trend-asistencias">Cargando...</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header"><span class="stat-title">Retrasos hoy</span><i class="fas fa-clock stat-icon"></i></div>
+            <div class="stat-value" id="retrasos-hoy">--</div>
+            <div class="stat-trend" id="trend-retrasos">Cargando...</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header"><span class="stat-title">Tasa asistencia</span><i class="fas fa-percent stat-icon"></i></div>
+            <div class="stat-value" id="tasa-asistencia">--</div>
+            <div class="stat-trend" id="trend-tasa">Cargando...</div>
+        </div>
+    </div>
+
+    <div class="insight-grid">
+        <div class="chart-card">
+            <div class="card-header"><h3><i class="fas fa-chart-bar"></i> Asistencia última semana</h3><i class="fas fa-calendar-week"></i></div>
+            <canvas id="weeklyChart" width="400" height="200" style="max-height: 200px;"></canvas>
+        </div>
+        <div class="activity-card">
+            <div class="card-header"><h3><i class="fas fa-bell"></i> Actividad reciente</h3><i class="fas fa-ellipsis-h"></i></div>
+            <ul class="activity-list" id="activity-list">
+                <li class="activity-item">Cargando actividad...</li>
+            </ul>
+        </div>
+    </div>
+{% endblock %}

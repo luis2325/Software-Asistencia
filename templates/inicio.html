@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página de Inicio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+</head>
+<body>
+    <header>
+        <h1>Bienvenido al Sistema de Registro de Asistencia</h1>
+    </header>
+
+    <div class="image-container">
+        <a href="/index">
+            <img src="{{ url_for('static', filename='registro.jpg') }}" alt="Capturar Video">
+            <div class="image-caption">Registro de Usuarios</div>
+        </a>
+        <a href="/tomar_asistencia">
+            <img src="{{ url_for('static', filename='asistencia.jpg') }}" alt="Tomar Asistencia">
+            <div class="image-caption">Tomar Asistencia</div>
+        </a>
+        <a href="/asistencia_listado">
+            <img src="{{ url_for('static', filename='listado.jpg') }}" alt="Listado de Asistencia">
+            <div class="image-caption">Listado de Asistencia</div>
+        </a>
+        
+    </div>
+</body>
+</html>

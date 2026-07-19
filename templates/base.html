@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Asistencia Inteligente{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="app-layout">
+    <aside class="dashboard-sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-scanner">
+                <div class="scanner-icon">
+                    <i class="fas fa-user-circle"></i>
+                    <div class="landmark side-lm-eye-l"></div>
+                    <div class="landmark side-lm-eye-r"></div>
+                    <div class="landmark side-lm-nose"></div>
+                    <div class="landmark side-lm-mouth-l"></div>
+                    <div class="landmark side-lm-mouth-r"></div>
+                    <div class="scan-line side-scan"></div>
+                </div>
+                <div class="scanner-text">Asistencia<br><span>Inteligente</span></div>
+            </div>
+        </div>
+        <nav class="sidebar-menu">
+            <a href="{{ url_for('dashboard') }}" class="menu-item"><i class="fas fa-tachometer-alt"></i><span>Panel Administrativo</span></a>
+             {% if session.user_role == 'admin' %}
+            <a href="{{ url_for('index') }}" class="menu-item"><i class="fas fa-user-plus"></i><span>Registrar Persona</span></a>
+            {% endif %}
+            <a href="{{ url_for('tomar_asistencia') }}" class="menu-item"><i class="fas fa-camera"></i><span>Tomar Asistencia</span></a>
+            {% if session.user_role == 'admin' %}
+            <a href="{{ url_for('personas') }}" class="menu-item"><i class="fas fa-users"></i><span>Ver Personas</span></a>
+            {% endif %}
+            <a href="{{ url_for('asistencia_listado') }}" class="menu-item"><i class="fas fa-calendar-check"></i><span>Ver Asistencia</span></a>
+            {% if session.user_role == 'admin' %}
+            <a href="{{ url_for('admin_usuarios') }}" class="menu-item"><i class="fas fa-users-cog"></i><span>Gestionar Usuarios</span></a>
+            {% endif %}
+            {% if session.user_role == 'admin' %}
+            <a href="{{ url_for('admin_configuracion') }}" class="menu-item"><i class="fas fa-cogs"></i><span>Configurar Horarios</span></a>
+            {% endif %}
+        </nav>
+        <div class="profile-section">
+            <div class="profile-card">
+                <div class="profile-avatar"><i class="fas fa-user-shield"></i></div>
+                <div class="profile-info">
+                    <p class="profile-name">{{ session.username | default('Usuario') }}</p>
+                    <p class="profile-role">{{ 'Administrador' if session.user_role == 'admin' else 'Secretario' }}</p>
+                    <div class="profile-actions">
+                        <a href="#"><i class="fas fa-id-card"></i> Perfil</a>
+                        <a href="#"><i class="fas fa-cog"></i> Config</a>
+                        <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Salir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar-footer"><i class="fas fa-shield-alt"></i>ASISTENCIA INTELIGENTE</div>
+    </aside>
+
+    <div class="mobile-menu-toggle" id="mobileToggle"><i class="fas fa-bars"></i></div>
+
+    <main class="dashboard-main">
+        <div class="main-header">
+            <div>
+                <h1 class="page-title">{% block page_title %}Panel de Control{% endblock %}</h1>
+                <p class="welcome-text">{% block welcome_text %}Bienvenido, {{ session.username }}{% endblock %}</p>
+            </div>
+            <div class="clock-card">
+                <div class="clock-date"><span class="clock-day-number" id="diaNumero"></span>
+                    <div class="clock-month-year"><span class="clock-month" id="mesNombre"></span><span class="clock-year" id="anioActual"></span></div>
+                </div>
+                <div class="clock-divider"></div>
+                <div class="clock-time"><i class="far fa-clock"></i><span id="horaActual" class="clock-hour-min"></span></div>
+                <div class="clock-weekday"><i class="far fa-calendar-alt"></i><span id="diaSemana"></span></div>
+            </div>
+        </div>
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Registro Exitoso{% endblock %}
+{% block page_title %}¡Registro Exitoso!{% endblock %}
+{% block welcome_text %}El registro facial se ha completado correctamente{% endblock %}
+
+{% block content %}
+<div class="result-card">
+    <i class="fas fa-check-circle result-icon"></i>
+    <p class="result-message">
+        La persona <strong>{{ nombre }} {{ apellido }}</strong> ha sido registrada correctamente.
+    </p>
+    <a href="{{ url_for('index') }}" class="result-button">
+        <i class="fas fa-user-plus"></i> Registrar otra persona
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Personas Registradas{% endblock %}
+{% block page_title %}Listado de Personas{% endblock %}
+{% block welcome_text %}Total de personas en el sistema: {{ personas|length }}{% endblock %}
+
+{% block content %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for persona in personas %}
+            <tr>
+                <td>{{ persona[0] }}</td>
+                <td>{{ persona[1] }}</td>
+                <td>{{ persona[2] }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3">No hay personas registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

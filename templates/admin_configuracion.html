@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración del Sistema{% endblock %}
+{% block page_title %}Configurar Horarios{% endblock %}
+{% block welcome_text %}Establece las horas de asistencia y almuerzo{% endblock %}
+
+{% block content %}
+<div class="admin-grid">
+    <div class="stat-card admin-form-card">
+        <h3><i class="fas fa-clock"></i> Horarios de asistencia</h3>
+        <form method="POST" action="{{ url_for('admin_configuracion') }}">
+            <div class="admin-form-group">
+                <label>Hora de inicio (entrada permitida desde)</label>
+                <input type="time" name="hora_inicio" value="{{ hora_inicio }}" class="filtro-input" required step="60">
+                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 08:00</small>
+            </div>
+            <div class="admin-form-group">
+                <label>Hora límite (hasta cuándo se considera "Temprano")</label>
+                <input type="time" name="hora_limite" value="{{ hora_limite }}" class="filtro-input" required step="60">
+                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 08:05</small>
+            </div>
+            <div class="admin-form-group">
+                <label>Hora de cierre (última entrada permitida)</label>
+                <input type="time" name="hora_final" value="{{ hora_final }}" class="filtro-input" required step="60">
+                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 17:00</small>
+            </div>
+            <div class="admin-form-group">
+                <label>Hora de salida a almuerzo (fija)</label>
+                <input type="time" name="hora_salida_almuerzo" value="{{ hora_salida_almuerzo }}" class="filtro-input" required step="60">
+                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 12:00</small>
+            </div>
+            <div class="admin-form-group">
+                <label>Hora de regreso de almuerzo (fija)</label>
+                <input type="time" name="hora_regreso_almuerzo" value="{{ hora_regreso_almuerzo }}" class="filtro-input" required step="60">
+                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 13:00</small>
+            </div>
+            <button type="submit" class="admin-btn-crear">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+        </form>
+    </div>
+    <div class="stat-card">
+        <h3><i class="fas fa-chart-line"></i> Horario actual</h3>
+        <p style="font-size: 0.9rem; color: #cbd5e1;">Las asistencias se registrarán según:</p>
+        <ul style="list-style: none; padding: 0;">
+            <li><i class="fas fa-play-circle" style="color: #4ade80;"></i> <strong>Entrada temprana:</strong> Hasta las {{ hora_limite }}</li>
+            <li><i class="fas fa-clock" style="color: #fbbf24;"></i> <strong>Entrada tarde:</strong> Desde después de {{ hora_limite }} hasta {{ hora_final }}</li>
+            <li><i class="fas fa-ban" style="color: #f87171;"></i> <strong>Fuera de horario:</strong> Después de {{ hora_final }}</li>
+            <li><i class="fas fa-utensils" style="color: #60a5fa;"></i> <strong>Almuerzo:</strong> Desde {{ hora_salida_almuerzo }} hasta {{ hora_regreso_almuerzo }} (fijo para todos)</li>
+        </ul>
+        <p class="asistencia-info" style="margin-top: 1rem;">
+            <i class="fas fa-sync-alt"></i> Los cambios surten efecto inmediatamente.
+        </p>
+    </div>
+</div>
+{% endblock %}

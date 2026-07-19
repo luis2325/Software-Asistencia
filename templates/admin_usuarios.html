@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Administrar Usuarios{% endblock %}
+{% block page_title %}Gestión de Usuarios{% endblock %}
+{% block welcome_text %}Crea y administra usuarios del sistema{% endblock %}
+
+{% block content %}
+<div class="admin-grid">
+    <div class="stat-card admin-form-card">
+        <h3>Nuevo Usuario</h3>
+        <form method="POST" action="{{ url_for('admin_crear_usuario') }}">
+            <div class="admin-form-group">
+                <label>Usuario</label>
+                <input type="text" name="username" required class="filtro-input">
+            </div>
+            <div class="admin-form-group">
+                <label>Contraseña</label>
+                <input type="password" name="password" required class="filtro-input">
+            </div>
+            <div class="admin-form-group">
+                <label>Correo electrónico</label>
+                <input type="email" name="email" required class="filtro-input">
+            </div>
+            <div class="admin-form-group">
+                <label>Rol</label>
+                <select name="rol" class="filtro-select">
+                    <option value="secretario">Secretario</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+            <button type="submit" class="admin-btn-crear">Crear Usuario</button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr>
+                    <td>{{ u.id }}</td>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ 'Administrador' if u.rol == 'admin' else 'Secretario' }}</td>
+                    <td>
+                        {% if u.id != session.user_id %}
+                        <a href="{{ url_for('admin_eliminar_usuario', id=u.id) }}" 
+                           onclick="return confirm('¿Eliminar este usuario?')"
+                           class="admin-btn-eliminar">
+                            Eliminar
+                        </a>
+                        {% else %}
+                        <span class="admin-tu-mismo">(Tú)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Persona{% endblock %}
+{% block page_title %}Registro de Nueva Persona{% endblock %}
+{% block welcome_text %}Complete los datos y capture el rostro{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 0 auto;">
+    <form action="/capturar" method="POST">
+        <label>Nombre:</label>
+        <input type="text" name="nombre" required placeholder="Ej: Juan">
+        
+        <label>Apellido:</label>
+        <input type="text" name="apellido" required placeholder="Ej: Pérez">
+        
+        <button type="submit">
+            <i class="fas fa-camera"></i> Capturar Rostro
+        </button>
+    </form>
+</div>
+{% endblock %}
