@@ -1,1 +1,1 @@
-# LJCP - Sistema de Asistencia Facial
+# LJCP - Asistencia Facial
