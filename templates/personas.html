@@ -1,32 +1,97 @@
 {% extends "base.html" %}
 
-{% block title %}Personas Registradas{% endblock %}
-{% block page_title %}Listado de Personas{% endblock %}
-{% block welcome_text %}Total de personas en el sistema: {{ personas|length }}{% endblock %}
+{% block title %}Personal Registrado | {{ product_name }}{% endblock %}
+{% block page_title %}Directorio de Personal & Biometría{% endblock %}
+{% block welcome_text %}Total de empleados con patrón biométrico registrado: {{ personas|length }}{% endblock %}
 
 {% block content %}
-<div class="table-responsive">
-    <table class="data-table">
+<div class="card-panel search-action-header" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+    <div style="flex: 1; min-width: 220px; max-width: 400px;">
+        <input type="text" id="buscarPersonaInput" class="form-input" placeholder="Buscar por nombre o apellido...">
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('index') }}" class="btn-primary">
+            <i class="fas fa-user-plus"></i> Registrar Empleado
+        </a>
+    </div>
+</div>
+
+<!-- Indicador Táctil Móvil -->
+<div class="table-scroll-hint">
+    <i class="fas fa-arrows-left-right"></i>
+    <span>Desliza horizontalmente para ver todas las columnas</span>
+</div>
+
+<div class="table-container">
+    <table class="modern-table" id="personasTable">
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Nombre</th>
-                <th>Apellido</th>
+                <th>Empleado</th>
+                <th>Estado Biométrico</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for persona in personas %}
             <tr>
-                <td>{{ persona[0] }}</td>
-                <td>{{ persona[1] }}</td>
-                <td>{{ persona[2] }}</td>
+                <td style="font-feature-settings: 'tnum'; color: var(--text-subtle);">#{{ persona[0] }}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div class="activity-avatar" style="width: 36px; height: 36px;">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.95rem;">{{ persona[1] }} {{ persona[2] }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-subtle);">Empleado Activo</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge-pill badge-temprano">
+                        <i class="fas fa-fingerprint" style="font-size: 0.75rem;"></i> Registrado (128-d)
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <a href="{{ url_for('asistencia_listado') }}?q={{ persona[1] }}" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">
+                            <i class="fas fa-history"></i> Asistencias
+                        </a>
+                        <form action="{{ url_for('admin_eliminar_persona', id=persona[0]) }}" method="POST" onsubmit="return confirm('¿Confirmas que deseas eliminar a {{ persona[1] }} {{ persona[2] }} y todo su historial de asistencia? Esta acción no se puede deshacer.');" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; color: var(--color-danger); border-color: rgba(239, 68, 68, 0.25);">
+                                <i class="fas fa-trash-can"></i> Eliminar
+                            </button>
+                        </form>
+                    </div>
+                </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="3">No hay personas registradas.</td>
+                <td colspan="4" style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+                    <i class="fas fa-users-slash" style="font-size: 2.5rem; margin-bottom: 0.75rem; display: block; opacity: 0.4;"></i>
+                    No hay empleados registrados en la base de datos.
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const inputBusqueda = document.getElementById('buscarPersonaInput');
+    const tabla = document.getElementById('personasTable');
+    if (inputBusqueda && tabla) {
+        inputBusqueda.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            const filas = tabla.querySelectorAll('tbody tr');
+            filas.forEach(fila => {
+                const texto = fila.textContent.toLowerCase();
+                fila.style.display = texto.includes(query) ? '' : 'none';
+            });
+        });
+    }
+</script>
 {% endblock %}

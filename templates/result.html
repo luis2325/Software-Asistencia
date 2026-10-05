@@ -1,17 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}Registro Exitoso{% endblock %}
-{% block page_title %}¡Registro Exitoso!{% endblock %}
-{% block welcome_text %}El registro facial se ha completado correctamente{% endblock %}
+{% block title %}Registro Exitoso | {{ product_name }}{% endblock %}
+{% block page_title %}Registro Biométrico Completado{% endblock %}
+{% block welcome_text %}El empleado ha sido vinculado exitosamente en el sistema{% endblock %}
 
 {% block content %}
-<div class="result-card">
-    <i class="fas fa-check-circle result-icon"></i>
-    <p class="result-message">
-        La persona <strong>{{ nombre }} {{ apellido }}</strong> ha sido registrada correctamente.
-    </p>
-    <a href="{{ url_for('index') }}" class="result-button">
-        <i class="fas fa-user-plus"></i> Registrar otra persona
-    </a>
+<div style="max-width: 520px; margin: 2rem auto; text-align: center;">
+    <div class="card-panel" style="padding: 2.5rem 2rem;">
+        <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--color-success-bg); color: var(--color-success); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 1.25rem auto; box-shadow: 0 0 25px rgba(16, 185, 129, 0.35);">
+            <i class="fas fa-check"></i>
+        </div>
+
+        <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
+            ¡Patrón Facial Registrado!
+        </h2>
+
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">
+            El empleado <strong style="color: var(--text-main);">{{ nombre }} {{ apellido }}</strong> ha sido registrado exitosamente en el sistema con su vector biométrico facial.
+        </p>
+
+        <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('index') }}" class="btn-primary">
+                <i class="fas fa-user-plus"></i> Registrar Otro Empleado
+            </a>
+            <a href="{{ url_for('personas') }}" class="btn-secondary">
+                <i class="fas fa-users"></i> Ver Directorio
+            </a>
+        </div>
+    </div>
 </div>
 {% endblock %}

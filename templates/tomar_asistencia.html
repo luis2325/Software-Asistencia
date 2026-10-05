@@ -1,24 +1,608 @@
 {% extends "base.html" %}
 
-{% block title %}Tomar Asistencia{% endblock %}
-{% block page_title %}Asistencia por Reconocimiento Facial{% endblock %}
-{% block welcome_text %}Coloque su rostro frente a la cámara{% endblock %}
+{% block title %}Escanear Asistencia | {{ product_name }}{% endblock %}
+{% block page_title %}Estación de Control Biométrico{% endblock %}
+{% block welcome_text %}Autenticación facial con prueba de vida activa en vivo{% endblock %}
 
 {% block content %}
-<div class="asistencia-container">
-    <div class="stat-card asistencia-card">
-        <i class="fas fa-video asistencia-icon"></i>
-        <p class="asistencia-text">
-            El sistema iniciará la cámara, detectará el rostro y registrará la asistencia automáticamente.
-        </p>
-        <form action="/tomar_asistencia" method="POST">
-            <button type="submit" class="btn-asistencia">
-                <i class="fas fa-play"></i> Iniciar Reconocimiento
+<div style="max-width: 700px; margin: 0 auto;">
+    
+    <!-- Barra de Pasos Visualmente Organizada -->
+    <div class="hud-steps-bar">
+        <div id="stepEncuadre" class="hud-step-item active">
+            <div class="hud-step-circle">1</div>
+            <span>Encuadre</span>
+        </div>
+        <div class="hud-step-arrow"><i class="fas fa-arrow-right"></i></div>
+        <div id="stepParpadeo" class="hud-step-item">
+            <div class="hud-step-circle">2</div>
+            <span>Parpadeo de Vida</span>
+        </div>
+        <div class="hud-step-arrow"><i class="fas fa-arrow-right"></i></div>
+        <div id="stepIdentificado" class="hud-step-item">
+            <div class="hud-step-circle">3</div>
+            <span>Registrado</span>
+        </div>
+    </div>
+
+    <!-- MODAL DE ASISTENCIA HTTPS EN CELULARES -->
+    <div class="mobile-https-overlay" id="mobileHttpsModal">
+        <div class="mobile-https-card">
+            <div style="width: 58px; height: 58px; background: linear-gradient(135deg, var(--color-primary), var(--color-cyan)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.7rem; margin: 0 auto 1.25rem auto; box-shadow: 0 0 25px var(--color-primary-glow);">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
+                Activar Cámara en Celular
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.25rem;">
+                Para mostrar la cámara en vivo y validar el parpadeo en tu teléfono, los navegadores (Chrome y Safari) exigen conexión <strong>HTTPS segura</strong>.
+            </p>
+            <button type="button" class="btn-primary" onclick="cambiarAHttps();" style="width: 100%; justify-content: center; padding: 0.85rem; margin-bottom: 1rem;">
+                <i class="fas fa-lock"></i> Conectar con HTTPS Seguro
             </button>
-        </form>
-        <p class="asistencia-info">
-            <i class="fas fa-info-circle"></i> El proceso puede tardar unos segundos.
-        </p>
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem; font-size: 0.76rem; color: var(--text-muted); text-align: left; line-height: 1.4;">
+                <strong style="color: var(--color-cyan);">Paso en tu celular:</strong> Si el navegador muestra <em>"La conexión no es privada"</em>, presiona <strong>Configuración avanzada</strong> y luego <strong>Acceder al sitio</strong> para conceder permiso a la cámara.
+            </div>
+        </div>
+    </div>
+
+    <!-- VISOR BIOMÉTRICO HUD AMPLIO -->
+    <div class="hud-scanner-container" style="border-radius: var(--radius-lg);">
+        
+        <div class="hud-camera-wrapper" id="hudCameraWrapper">
+            <video id="cameraVideo" autoplay playsinline webkit-playsinline muted></video>
+            <canvas id="captureCanvas" style="display: none;"></canvas>
+
+            <!-- Botón de Toque Táctil si el navegador bloquea autoplay en móvil -->
+            <button type="button" id="btnTouchActivate" class="hud-touch-activator" style="display: none;" onclick="iniciarCamaraConPermiso();">
+                <i class="fas fa-camera"></i>
+                <span>Toca para Activar Cámara</span>
+            </button>
+
+            <!-- Esquinas de Enfoque -->
+            <div class="hud-corner hud-c-tl"></div>
+            <div class="hud-corner hud-c-tr"></div>
+            <div class="hud-corner hud-c-bl"></div>
+            <div class="hud-corner hud-c-br"></div>
+
+            <!-- Timestamp HUD en Vivo (12 Horas AM/PM) -->
+            <div class="hud-live-timestamp">
+                <span class="hud-rec-dot"></span>
+                <span id="hudClockTime">--:--:-- --</span>
+            </div>
+
+            <!-- Láser de Escaneo -->
+            <div class="hud-laser" id="hudLaser"></div>
+
+            <!-- ÓVALO GUÍA AMPLIO Y RESPONSIVO -->
+            <div class="hud-oval-guide" id="hudOval"></div>
+
+            <!-- BADGE ANIMADO DE INDICACIÓN DE PARPADEO DIRECTO EN PANTALLA -->
+            <div class="hud-blink-prompt" id="hudBlinkBadge" style="display: none;">
+                <i class="fas fa-eye-slash" id="hudBlinkIcon"></i>
+                <span id="hudBlinkMsg">¡Parpadea ahora!</span>
+            </div>
+
+            <!-- Banner de Estado Dinámico -->
+            <div class="hud-status-banner">
+                <div class="hud-status-text" id="hudStatusText">
+                    <i class="fas fa-circle-notch fa-spin" style="color: var(--color-cyan);"></i>
+                    <span>Iniciando sensor biométrico...</span>
+                </div>
+            </div>
+
+            <!-- Modal Flotante de Resultado Exitoso -->
+            <div class="hud-result-modal" id="hudResultModal">
+                <div class="hud-success-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="hud-result-title" id="resPersona">Empleado</div>
+                <div class="hud-result-subtitle" id="resMensaje">Asistencia registrada con éxito</div>
+                <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.25rem;">
+                    <span class="badge-pill badge-temprano" id="resEstado">A tiempo</span>
+                    <span class="badge-pill badge-salida" id="resHora">--:--:--</span>
+                </div>
+                <button type="button" class="btn-primary" style="width: 100%; justify-content: center;" onclick="cerrarModalResultado();">
+                    <i class="fas fa-arrow-right"></i> Siguiente Empleado
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra de Controles Organizada -->
+        <div class="hud-controls-bar">
+            <button type="button" class="btn-primary hud-btn-main" id="btnManualCapture">
+                <i class="fas fa-fingerprint"></i>
+                <span>Verificar Ahora</span>
+            </button>
+            <div class="hud-secondary-group">
+                <button type="button" class="btn-secondary" id="btnSwitchCamera" title="Cambiar cámara">
+                    <i class="fas fa-camera-rotate"></i>
+                    <span>Girar Cámara</span>
+                </button>
+                <button type="button" class="btn-secondary" id="btnReiniciarCamara" title="Reiniciar cámara">
+                    <i class="fas fa-arrows-rotate"></i>
+                    <span>Reconectar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consejos de Organización y Uso -->
+    <div class="card-panel" style="margin-top: 1.5rem; padding: 1rem 1.25rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+            <div>
+                <i class="fas fa-face-smile" style="color: var(--color-cyan); font-size: 1.2rem; display: block; margin-bottom: 0.35rem;"></i>
+                <strong>1. Encuadre:</strong> Mantén tu rostro dentro del óvalo frente al celular.
+            </div>
+            <div>
+                <i class="fas fa-eye" style="color: var(--color-warning); font-size: 1.2rem; display: block; margin-bottom: 0.35rem;"></i>
+                <strong>2. Parpadeo:</strong> Cierra y abre los ojos cuando aparezca el aviso amarillo.
+            </div>
+            <div>
+                <i class="fas fa-circle-check" style="color: var(--color-success); font-size: 1.2rem; display: block; margin-bottom: 0.35rem;"></i>
+                <strong>3. Registro:</strong> Tu asistencia queda grabada al instante con hora exacta.
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let videoStream = null;
+    let currentFacingMode = "user";
+    let isProcessing = false;
+    let scanInterval = null;
+    let lastSuccessTime = 0;
+    let conteoSinRostro = 0;
+    
+    // Máquina de estados con Calibración Dinámica de Línea Base (Anti-Falsos Positivos)
+    let baselineEAR = 0;
+    let framesOjosAbiertos = 0;
+    let framesOjosCerrados = 0;
+    let tiempoInicioParpadeo = 0;
+    let pasoParpadeo = "CALIBRANDO_OJOS_ABIERTOS";
+    let parpadeoVerificado = false;
+
+    const video = document.getElementById("cameraVideo");
+    const canvas = document.getElementById("captureCanvas");
+    const hudOval = document.getElementById("hudOval");
+    const hudStatus = document.getElementById("hudStatusText");
+    const hudBlinkBadge = document.getElementById("hudBlinkBadge");
+    const hudBlinkIcon = document.getElementById("hudBlinkIcon");
+    const hudBlinkMsg = document.getElementById("hudBlinkMsg");
+    const resultModal = document.getElementById("hudResultModal");
+    const btnSwitchCamera = document.getElementById("btnSwitchCamera");
+    const btnManualCapture = document.getElementById("btnManualCapture");
+    const btnReiniciarCamara = document.getElementById("btnReiniciarCamara");
+    const btnTouchActivate = document.getElementById("btnTouchActivate");
+    const mobileHttpsModal = document.getElementById("mobileHttpsModal");
+
+    // Elementos de la barra de pasos
+    const stepEncuadre = document.getElementById("stepEncuadre");
+    const stepParpadeo = document.getElementById("stepParpadeo");
+    const stepIdentificado = document.getElementById("stepIdentificado");
+
+    function cambiarAHttps() {
+        window.location.href = window.location.href.replace("http:", "https:");
+    }
+
+    function actualizarPasosUI(paso) {
+        if (paso === 1) {
+            stepEncuadre.className = "hud-step-item active";
+            stepParpadeo.className = "hud-step-item";
+            stepIdentificado.className = "hud-step-item";
+            hudOval.className = "hud-oval-guide";
+            hudBlinkBadge.style.display = "none";
+        } else if (paso === 2) {
+            stepEncuadre.className = "hud-step-item success";
+            stepParpadeo.className = "hud-step-item warning";
+            stepIdentificado.className = "hud-step-item";
+            hudOval.className = "hud-oval-guide blink";
+            hudBlinkBadge.style.display = "flex";
+        } else if (paso === 3) {
+            stepEncuadre.className = "hud-step-item success";
+            stepParpadeo.className = "hud-step-item success";
+            stepIdentificado.className = "hud-step-item success";
+            hudOval.className = "hud-oval-guide success";
+            hudBlinkBadge.className = "hud-blink-prompt success";
+            hudBlinkIcon.className = "fas fa-check-circle";
+            hudBlinkMsg.textContent = "¡Prueba de vida confirmada!";
+            hudBlinkBadge.style.display = "flex";
+        }
+    }
+
+    // Comprobar si el navegador requiere HTTPS en celular
+    function verificarSoporteSeguro() {
+        const esLocal = (location.hostname === "localhost" || location.hostname === "127.0.0.1");
+        const esHttps = (location.protocol === "https:");
+        const esSeguro = (window.isSecureContext || esLocal || esHttps);
+
+        if (!esSeguro && window.innerWidth <= 820) {
+            mobileHttpsModal.classList.add("show");
+            return false;
+        }
+        return true;
+    }
+
+    // Iniciar cámara WebRTC con soporte total para celulares (iOS Safari y Android Chrome)
+    async function startCamera(facingMode = "user") {
+        if (videoStream) {
+            try {
+                videoStream.getTracks().forEach(track => track.stop());
+            } catch (e) {}
+            videoStream = null;
+        }
+
+        btnTouchActivate.style.display = "none";
+
+        if (!verificarSoporteSeguro()) {
+            hudStatus.innerHTML = '<span style="color: var(--color-warning);"><i class="fas fa-lock"></i> Se requiere HTTPS para ver la cámara en celular.</span>';
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            hudStatus.innerHTML = '<span style="color: var(--color-warning);"><i class="fas fa-triangle-exclamation"></i> Pulsa "Conectar con HTTPS" para habilitar la cámara.</span>';
+            mobileHttpsModal.classList.add("show");
+            return;
+        }
+
+        hudStatus.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="color: var(--color-cyan);"></i> <span>Conectando cámara del celular...</span>';
+
+        // Configurar atributos móviles esenciales antes de vincular el stream
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
+        video.setAttribute("autoplay", "");
+
+        // Aplicar espejo solo para cámara frontal (selfie)
+        if (facingMode === "user") {
+            video.style.transform = "scaleX(-1)";
+        } else {
+            video.style.transform = "none";
+        }
+
+        // Constraints flexibles con fallback progresivo para celulares
+        const opcionesConstraints = [
+            // 1. Frontal/trasera ideal adaptada a formato vertical móvil
+            {
+                video: {
+                    facingMode: { ideal: facingMode },
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                },
+                audio: false
+            },
+            // 2. Solo facingMode
+            {
+                video: { facingMode: facingMode },
+                audio: false
+            },
+            // 3. Fallback a cualquier cámara disponible
+            {
+                video: true,
+                audio: false
+            }
+        ];
+
+        let streamObtenido = null;
+        for (const constraints of opcionesConstraints) {
+            try {
+                streamObtenido = await navigator.mediaDevices.getUserMedia(constraints);
+                if (streamObtenido) break;
+            } catch (err) {
+                console.warn("Constraint no compatible, intentando siguiente fallback:", err.name);
+            }
+        }
+
+        if (!streamObtenido) {
+            hudStatus.innerHTML = '<span style="color: var(--color-warning);"><i class="fas fa-camera"></i> Permiso de cámara denegado. Concede permiso en el navegador.</span>';
+            btnTouchActivate.style.display = "flex";
+            return;
+        }
+
+        videoStream = streamObtenido;
+        video.srcObject = videoStream;
+        currentFacingMode = facingMode;
+
+        try {
+            await video.play();
+            actualizarPasosUI(1);
+            hudStatus.innerHTML = '<i class="fas fa-expand" style="color: var(--color-cyan);"></i> <span>Paso 1: Centra tu rostro en el óvalo</span>';
+            btnTouchActivate.style.display = "none";
+            iniciarEscaneoAutomatico();
+        } catch (playErr) {
+            console.warn("Autoplay bloqueado por el navegador (requiere interacción táctil):", playErr);
+            btnTouchActivate.style.display = "flex";
+            hudStatus.innerHTML = '<span style="color: var(--color-warning);"><i class="fas fa-hand-pointer"></i> Toca la pantalla para activar la transmisión.</span>';
+        }
+    }
+
+    function iniciarCamaraConPermiso() {
+        startCamera(currentFacingMode);
+    }
+
+    btnSwitchCamera.addEventListener("click", () => {
+        const nextMode = currentFacingMode === "user" ? "environment" : "user";
+        startCamera(nextMode);
+    });
+
+    btnReiniciarCamara.addEventListener("click", () => {
+        startCamera(currentFacingMode);
+    });
+
+    // Capturar y procesar frame con detección de parpadeo (Prueba de Vida en Vivo)
+    async function capturarYEnviar() {
+        if (isProcessing) return;
+        if (Date.now() - lastSuccessTime < 4500) return;
+        if (!video.videoWidth || !video.videoHeight || video.paused) return;
+
+        isProcessing = true;
+
+        // Optimización clave para celulares: escalar a max 480px para transmisión instantánea (30KB)
+        const maxDim = 480;
+        let w = video.videoWidth;
+        let h = video.videoHeight;
+        if (w > maxDim || h > maxDim) {
+            if (w > h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+            } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+            }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+
+        // Si es cámara frontal, invertimos para que coincida con lo que el usuario ve
+        if (currentFacingMode === "user") {
+            ctx.translate(w, 0);
+            ctx.scale(-1, 1);
+        }
+        ctx.drawImage(video, 0, 0, w, h);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+
+        try {
+            const response = await fetch("/api/v1/reconocer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    imagen: dataUrl,
+                    verificado_parpadeo: parpadeoVerificado,
+                    dispositivo: window.innerWidth <= 768 ? "Celular en Vivo" : "Computador Web"
+                })
+            });
+
+            const res = await response.json();
+
+            // 1. Si no hay rostro en el fotograma
+            if (res.codigo === "sin_rostro") {
+                conteoSinRostro++;
+                // Tolerancia de 4 fotogramas para no reiniciar bruscamente si el usuario se mueve
+                if (conteoSinRostro >= 4) {
+                    actualizarPasosUI(1);
+                    hudStatus.innerHTML = '<i class="fas fa-expand" style="color: var(--color-cyan);"></i> <span>Paso 1: Coloca tu rostro dentro del óvalo</span>';
+                    pasoParpadeo = "CALIBRANDO_OJOS_ABIERTOS";
+                    parpadeoVerificado = false;
+                    framesOjosAbiertos = 0;
+                    framesOjosCerrados = 0;
+                    baselineEAR = 0;
+                    hudBlinkBadge.style.display = "none";
+                }
+                return;
+            }
+
+            conteoSinRostro = 0; // Rostro presente y centrado
+
+            // 2. Evaluación de Prueba de Vida por Parpadeo Dinámico
+            if (res.codigo === "esperando_parpadeo") {
+                actualizarPasosUI(2);
+                const estadoOjos = res.estado_ojos; // "ABIERTO", "CERRADO" o "ENTRECERRADO"
+                const ear = typeof res.ear === "number" ? res.ear : 0.25;
+
+                // FASE 1: Calibrar ojos abiertos y calcular línea base personal
+                if (pasoParpadeo === "CALIBRANDO_OJOS_ABIERTOS") {
+                    if (estadoOjos === "ABIERTO" && ear >= 0.23) {
+                        framesOjosAbiertos++;
+                        baselineEAR = (baselineEAR === 0) ? ear : (baselineEAR * 0.65 + ear * 0.35);
+
+                        hudStatus.innerHTML = '<i class="fas fa-eye" style="color: var(--color-cyan);"></i> <span>Rostro enfocado. Calibrando ojos...</span>';
+                        hudBlinkBadge.style.display = "flex";
+                        hudBlinkIcon.className = "fas fa-eye";
+                        hudBlinkMsg.textContent = "Mira a la cámara";
+
+                        // Al menos 2 fotogramas estables con ojos abiertos para fijar línea base
+                        if (framesOjosAbiertos >= 2 && baselineEAR >= 0.22) {
+                            pasoParpadeo = "ESPERANDO_PARPADEO";
+                            framesOjosCerrados = 0;
+                            tiempoInicioParpadeo = Date.now();
+                        }
+                    } else {
+                        framesOjosAbiertos = 0;
+                        hudStatus.innerHTML = '<i class="fas fa-eye" style="color: var(--color-cyan);"></i> <span>Abre bien los ojos mirando a la cámara</span>';
+                        hudBlinkBadge.style.display = "flex";
+                        hudBlinkIcon.className = "fas fa-eye";
+                        hudBlinkMsg.textContent = "Abre bien los ojos frente a la cámara";
+                    }
+                } 
+                // FASE 2: Espera de parpadeo genuino (Ojos completamente cerrados)
+                else if (pasoParpadeo === "ESPERANDO_PARPADEO") {
+                    // Verificación estricta: caída relativa >= 26% respecto a su línea base Y por debajo de 0.18
+                    const caidaRelativa = (baselineEAR > 0) ? (ear / baselineEAR) : 1.0;
+                    const estaRealmenteCerrado = (estadoOjos === "CERRADO" || ear <= 0.18) && (caidaRelativa <= 0.74 || ear <= 0.16);
+
+                    if (estaRealmenteCerrado) {
+                        framesOjosCerrados++;
+                        pasoParpadeo = "ESPERANDO_REAPERTURA";
+                        if (navigator.vibrate) navigator.vibrate([60]);
+
+                        hudStatus.innerHTML = '<i class="fas fa-eye-slash" style="color: var(--color-warning);"></i> <span>¡Ojos cerrados detectados! Ahora ábrelos...</span>';
+                        hudBlinkIcon.className = "fas fa-eye";
+                        hudBlinkMsg.textContent = "¡Muy bien! Ahora ábrelos...";
+                    } else {
+                        // Si pasan más de 8 segundos sin parpadear, reiniciar calibración para evitar atascos
+                        if (Date.now() - tiempoInicioParpadeo > 8000) {
+                            pasoParpadeo = "CALIBRANDO_OJOS_ABIERTOS";
+                            framesOjosAbiertos = 0;
+                            baselineEAR = 0;
+                        } else {
+                            hudStatus.innerHTML = '<i class="fas fa-eye-slash" style="color: var(--color-warning);"></i> <span>¡Parpadea ahora! (Cierra los ojos un segundo)</span>';
+                            hudBlinkIcon.className = "fas fa-eye-slash";
+                            hudBlinkMsg.textContent = "¡Parpadea ahora! (Cierra los ojos)";
+                        }
+                    }
+                } 
+                // FASE 3: Confirmación de reapertura tras parpadear
+                else if (pasoParpadeo === "ESPERANDO_REAPERTURA") {
+                    // Los ojos deben volver a abrirse (EAR >= 0.22 o al menos 82% de su línea base)
+                    const estaReabierto = (estadoOjos === "ABIERTO" && ear >= 0.22) || (baselineEAR > 0 && ear >= (baselineEAR * 0.82));
+
+                    if (estaReabierto) {
+                        parpadeoVerificado = true;
+                        pasoParpadeo = "VERIFICADO";
+                        actualizarPasosUI(3);
+
+                        if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+                        reproducirChimeExito();
+
+                        hudStatus.innerHTML = '<i class="fas fa-check-circle" style="color: var(--color-success);"></i> <span>¡Parpadeo verificado! Identificando empleado...</span>';
+                        hudBlinkIcon.className = "fas fa-check";
+                        hudBlinkMsg.textContent = "¡Parpadeo confirmado!";
+
+                        // Dispara de inmediato la verificación biométrica con parpadeo certificado
+                        setTimeout(capturarYEnviar, 150);
+                        return;
+                    }
+                }
+                return;
+            }
+
+            // 3. Si fue reconocido exitosamente tras el parpadeo
+            if (res.success) {
+                lastSuccessTime = Date.now();
+                actualizarPasosUI(3);
+
+                if (navigator.vibrate) {
+                    navigator.vibrate([150, 70, 200]);
+                }
+                reproducirChimeExito();
+
+                document.getElementById("resPersona").textContent = res.persona;
+                document.getElementById("resMensaje").textContent = res.mensaje;
+                document.getElementById("resHora").textContent = res.hora;
+
+                const estadoEl = document.getElementById("resEstado");
+                estadoEl.textContent = res.estado;
+                if (res.estado === "Temprano") {
+                    estadoEl.className = "badge-pill badge-temprano";
+                } else if (res.estado === "Tarde") {
+                    estadoEl.className = "badge-pill badge-retraso";
+                } else {
+                    estadoEl.className = "badge-pill badge-salida";
+                }
+
+                resultModal.classList.add("show");
+                hudStatus.innerHTML = `<i class="fas fa-check-circle" style="color: var(--color-success);"></i> <span>¡Bienvenido(a), ${res.persona}!</span>`;
+
+                setTimeout(() => {
+                    cerrarModalResultado();
+                }, 3800);
+
+            } else if (res.codigo === "no_coincide") {
+                hudOval.className = "hud-oval-guide warning";
+                hudStatus.innerHTML = '<i class="fas fa-user-xmark" style="color: var(--color-warning);"></i> <span>Rostro no registrado en el sistema</span>';
+                pasoParpadeo = "CALIBRANDO_OJOS_ABIERTOS";
+                parpadeoVerificado = false;
+                framesOjosAbiertos = 0;
+                baselineEAR = 0;
+                hudBlinkBadge.style.display = "none";
+            }
+
+        } catch (err) {
+            console.error("Error en escaneo en vivo:", err);
+        } finally {
+            isProcessing = false;
+        }
+    }
+
+    const captureAndSend = capturarYEnviar;
+
+    function reproducirChimeExito() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.18, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.35);
+        } catch(e) {}
+    }
+
+    function cerrarModalResultado() {
+        resultModal.classList.remove("show");
+        actualizarPasosUI(1);
+        pasoParpadeo = "CALIBRANDO_OJOS_ABIERTOS";
+        parpadeoVerificado = false;
+        baselineEAR = 0;
+        framesOjosAbiertos = 0;
+        framesOjosCerrados = 0;
+        hudStatus.innerHTML = '<i class="fas fa-expand" style="color: var(--color-cyan);"></i> <span>Paso 1: Coloca tu rostro en el óvalo</span>';
+        hudBlinkBadge.style.display = "none";
+    }
+
+    function iniciarEscaneoAutomatico() {
+        if (scanInterval) clearInterval(scanInterval);
+        // Escaneo cada 450ms: frecuencia ideal para capturar parpadeo fluido sin lag
+        scanInterval = setInterval(capturarYEnviar, 450);
+    }
+
+    const startAutoScan = iniciarEscaneoAutomatico;
+
+    // Reloj HUD 12 horas con AM/PM (no militar)
+    function actualizarRelojHud() {
+        const now = new Date();
+        let hours = now.getHours();
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+        const seconds = String(now.getSeconds()).padStart(2, "0");
+        const ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12 || 12;
+        const hoursStr = String(hours).padStart(2, "0");
+        const hudTimeEl = document.getElementById("hudClockTime");
+        if (hudTimeEl) {
+            hudTimeEl.textContent = `${hoursStr}:${minutes}:${seconds} ${ampm}`;
+        }
+    }
+
+    btnManualCapture.addEventListener("click", () => {
+        parpadeoVerificado = true;
+        capturarYEnviar();
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        actualizarRelojHud();
+        setInterval(actualizarRelojHud, 1000);
+        startCamera(currentFacingMode);
+    });
+
+    window.addEventListener("beforeunload", () => {
+        if (scanInterval) clearInterval(scanInterval);
+        if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+    });
+</script>
 {% endblock %}

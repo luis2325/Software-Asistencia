@@ -1,70 +1,113 @@
 {% extends "base.html" %}
 
-{% block title %}Administrar Usuarios{% endblock %}
-{% block page_title %}Gestión de Usuarios{% endblock %}
-{% block welcome_text %}Crea y administra usuarios del sistema{% endblock %}
+{% block title %}Usuarios del Sistema | {{ product_name }}{% endblock %}
+{% block page_title %}Administración de Cuentas y Accesos{% endblock %}
+{% block welcome_text %}Gestiona los usuarios autorizados para operar la plataforma{% endblock %}
 
 {% block content %}
-<div class="admin-grid">
-    <div class="stat-card admin-form-card">
-        <h3>Nuevo Usuario</h3>
+<div class="admin-grid-2">
+    
+    <!-- Formulario de Nuevo Usuario -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-user-shield"></i> Nuevo Usuario</h3>
+        </div>
+
         <form method="POST" action="{{ url_for('admin_crear_usuario') }}">
-            <div class="admin-form-group">
-                <label>Usuario</label>
-                <input type="text" name="username" required class="filtro-input">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                    Nombre de Usuario *
+                </label>
+                <input type="text" name="username" required class="form-input" placeholder="Ej: supervisor1">
             </div>
-            <div class="admin-form-group">
-                <label>Contraseña</label>
-                <input type="password" name="password" required class="filtro-input">
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                    Correo Electrónico *
+                </label>
+                <input type="email" name="email" required class="form-input" placeholder="usuario@empresa.com">
             </div>
-            <div class="admin-form-group">
-                <label>Correo electrónico</label>
-                <input type="email" name="email" required class="filtro-input">
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                    Contraseña * (mínimo 6 caracteres)
+                </label>
+                <input type="password" name="password" required minlength="6" class="form-input" placeholder="••••••••">
             </div>
-            <div class="admin-form-group">
-                <label>Rol</label>
-                <select name="rol" class="filtro-select">
-                    <option value="secretario">Secretario</option>
-                    <option value="admin">Administrador</option>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                    Rol de Seguridad
+                </label>
+                <select name="rol" class="form-input" style="cursor: pointer;">
+                    <option value="secretario">Supervisor / Operador</option>
+                    <option value="admin">Administrador General</option>
                 </select>
             </div>
-            <button type="submit" class="admin-btn-crear">Crear Usuario</button>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                <i class="fas fa-plus"></i> Crear Cuenta
+            </button>
         </form>
     </div>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Usuario</th>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for u in usuarios %}
-                <tr>
-                    <td>{{ u.id }}</td>
-                    <td>{{ u.username }}</td>
-                    <td>{{ u.email }}</td>
-                    <td>{{ 'Administrador' if u.rol == 'admin' else 'Secretario' }}</td>
-                    <td>
-                        {% if u.id != session.user_id %}
-                        <a href="{{ url_for('admin_eliminar_usuario', id=u.id) }}" 
-                           onclick="return confirm('¿Eliminar este usuario?')"
-                           class="admin-btn-eliminar">
-                            Eliminar
-                        </a>
-                        {% else %}
-                        <span class="admin-tu-mismo">(Tú)</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Tabla de Usuarios Existentes -->
+    <div class="card-panel" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="font-size: 1rem; font-weight: 600;"><i class="fas fa-users-gear" style="color: var(--color-primary); margin-right: 6px;"></i> Usuarios Activos</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Total: {{ usuarios|length }}</span>
+        </div>
+
+        <!-- Indicador Táctil Móvil -->
+        <div class="table-scroll-hint" style="margin: 0.75rem 1rem 0 1rem;">
+            <i class="fas fa-arrows-left-right"></i>
+            <span>Desliza horizontalmente para ver todas las columnas</span>
+        </div>
+
+        <div class="table-container" style="border: none; border-radius: 0;">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">{{ u.username }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-subtle);">ID #{{ u.id }}</div>
+                        </td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">{{ u.email }}</td>
+                        <td>
+                            {% if u.rol == 'admin' %}
+                                <span class="badge-pill badge-salida">Administrador</span>
+                            {% else %}
+                                <span class="badge-pill badge-temprano">Supervisor</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.id != session.user_id %}
+                            <form action="{{ url_for('admin_eliminar_usuario', id=u.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Confirmas eliminar al usuario {{ u.username }}? Esta acción no se puede deshacer.');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="logout-btn" style="color: var(--color-danger);" title="Eliminar usuario">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <span style="font-size: 0.75rem; color: var(--color-cyan); font-weight: 600;">(Tú)</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

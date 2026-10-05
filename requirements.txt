@@ -1,0 +1,10 @@
+# Dependencias Principales - Nexum ID
+Flask>=3.0.0
+Flask-Mail>=0.10.0
+mysql-connector-python>=9.0.0
+opencv-python>=4.10.0
+face-recognition>=1.3.0
+dlib>=19.24.0
+numpy>=1.26.0
+Pillow>=10.0.0
+Werkzeug>=3.0.0

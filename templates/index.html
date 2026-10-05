@@ -1,21 +1,273 @@
 {% extends "base.html" %}
 
-{% block title %}Registrar Persona{% endblock %}
-{% block page_title %}Registro de Nueva Persona{% endblock %}
-{% block welcome_text %}Complete los datos y capture el rostro{% endblock %}
+{% block title %}Registrar Personal | {{ product_name }}{% endblock %}
+{% block page_title %}Registro de Personal y Rostro{% endblock %}
+{% block welcome_text %}Ingresa los datos del empleado y captura su patrón biométrico{% endblock %}
 
 {% block content %}
-<div style="max-width: 500px; margin: 0 auto;">
-    <form action="/capturar" method="POST">
-        <label>Nombre:</label>
-        <input type="text" name="nombre" required placeholder="Ej: Juan">
-        
-        <label>Apellido:</label>
-        <input type="text" name="apellido" required placeholder="Ej: Pérez">
-        
-        <button type="submit">
-            <i class="fas fa-camera"></i> Capturar Rostro
-        </button>
-    </form>
+<div style="max-width: 650px; margin: 0 auto;">
+    
+    <!-- Alerta de Contexto Seguro / Cámara en Celular si es HTTP -->
+    <div id="httpSecurityBanner" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-md); padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+            <i class="fas fa-triangle-exclamation" style="color: var(--color-warning); font-size: 1.3rem; margin-top: 2px;"></i>
+            <div>
+                <strong style="color: var(--color-warning); font-size: 0.95rem; display: block; margin-bottom: 0.25rem;">
+                    Conexión HTTP detectada en celular
+                </strong>
+                <p style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 0.75rem; line-height: 1.4;">
+                    Los navegadores móviles requieren <strong>HTTPS</strong> para video en vivo. Para capturar la foto directamente, pulsa el botón a continuación:
+                </p>
+                <button type="button" class="btn-primary" onclick="document.getElementById('regNativeCameraInput').click();" style="font-size: 0.85rem; padding: 0.6rem 1rem;">
+                    <i class="fas fa-camera"></i> Tomar Foto con Cámara del Celular
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Oculto de Captura Nativa para Celulares -->
+    <input type="file" id="regNativeCameraInput" accept="image/*" capture="user" style="display: none;" onchange="procesarFotoNativaRegistro(this);">
+
+    <div class="card-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-id-card-clip"></i> Datos del Empleado</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fas fa-camera"></i> Registro Biométrico</span>
+        </div>
+
+        <form action="{{ url_for('capturar') }}" method="POST" id="formRegistro">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="foto_b64" id="inputFotoB64">
+
+            <div class="form-grid-2" style="margin-bottom: 1.25rem;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted);">
+                        Nombre(s) *
+                    </label>
+                    <input type="text" name="nombre" class="form-input" required placeholder="Ej: Carlos">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted);">
+                        Apellido(s) *
+                    </label>
+                    <input type="text" name="apellido" class="form-input" required placeholder="Ej: Rodríguez">
+                </div>
+            </div>
+
+            <!-- Visor de Captura para Registro -->
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted);">
+                    Captura Biométrica *
+                </label>
+                
+                <div class="hud-scanner-container" style="margin-bottom: 0.75rem; border-radius: var(--radius-lg);">
+                    <div class="hud-camera-wrapper">
+                        <video id="regVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+                        <canvas id="regCanvas" style="display: none;"></canvas>
+                        <img id="regPreview" style="display: none; width: 100%; height: 100%; object-fit: cover;" alt="Captura de rostro">
+
+                        <!-- Esquinas de Enfoque -->
+                        <div class="hud-corner hud-c-tl"></div>
+                        <div class="hud-corner hud-c-tr"></div>
+                        <div class="hud-corner hud-c-bl"></div>
+                        <div class="hud-corner hud-c-br"></div>
+
+                        <!-- Óvalo Guía Amplio y Responsivo -->
+                        <div class="hud-oval-guide" id="regOval"></div>
+
+                        <!-- Estado del visor -->
+                        <div class="hud-status-banner">
+                            <div class="hud-status-text" id="regStatus">
+                                <i class="fas fa-camera" style="color: var(--color-cyan);"></i>
+                                <span>Centra el rostro en el óvalo y captura la foto</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controles de la cámara de registro -->
+                <div class="hud-controls-bar">
+                    <button type="button" class="btn-primary hud-btn-main" id="btnTomarFoto">
+                        <i class="fas fa-camera"></i>
+                        <span>Capturar Foto</span>
+                    </button>
+                    <div class="hud-secondary-group">
+                        <button type="button" class="btn-secondary" id="btnToggleCam" title="Girar cámara">
+                            <i class="fas fa-camera-rotate"></i>
+                            <span>Girar Cámara</span>
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="document.getElementById('regNativeCameraInput').click();" title="Usar app nativa de cámara">
+                            <i class="fas fa-mobile-screen"></i>
+                            <span>Cámara Celular</span>
+                        </button>
+                        <button type="button" class="btn-secondary" id="btnReintentarFoto" style="display: none;">
+                            <i class="fas fa-rotate-left"></i>
+                            <span>Repetir</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('personas') }}" class="btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-primary" id="btnGuardarRegistro" disabled style="opacity: 0.5;">
+                    <i class="fas fa-user-check"></i> Guardar y Registrar
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let stream = null;
+    let facingMode = 'user';
+    const regVideo = document.getElementById('regVideo');
+    const regCanvas = document.getElementById('regCanvas');
+    const regPreview = document.getElementById('regPreview');
+    const inputB64 = document.getElementById('inputFotoB64');
+    const regStatus = document.getElementById('regStatus');
+    const regOval = document.getElementById('regOval');
+    const btnTomarFoto = document.getElementById('btnTomarFoto');
+    const btnReintentar = document.getElementById('btnReintentarFoto');
+    const btnGuardar = document.getElementById('btnGuardarRegistro');
+    const btnToggleCam = document.getElementById('btnToggleCam');
+    const httpBanner = document.getElementById('httpSecurityBanner');
+    const regNativeInput = document.getElementById('regNativeCameraInput');
+
+    async function iniciarCamara(mode) {
+        if (stream) {
+            try { stream.getTracks().forEach(t => t.stop()); } catch(e) {}
+            stream = null;
+        }
+
+        const isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'https:';
+        if (!isSecure && window.innerWidth <= 800) {
+            httpBanner.style.display = 'block';
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            regStatus.innerHTML = '<span style="color: var(--color-warning);"><i class="fas fa-triangle-exclamation"></i> Pulsa "Cámara Celular" para capturar</span>';
+            httpBanner.style.display = 'block';
+            return;
+        }
+
+        regVideo.muted = true;
+        regVideo.playsInline = true;
+        regVideo.setAttribute('playsinline', '');
+        regVideo.setAttribute('webkit-playsinline', '');
+        regVideo.setAttribute('autoplay', '');
+
+        const constraintsList = [
+            { video: { facingMode: { ideal: mode }, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+            { video: { facingMode: mode }, audio: false },
+            { video: true, audio: false }
+        ];
+
+        let streamObtenido = null;
+        for (const c of constraintsList) {
+            try {
+                streamObtenido = await navigator.mediaDevices.getUserMedia(c);
+                if (streamObtenido) break;
+            } catch(err) {
+                console.warn('Fallback constraint en registro:', err);
+            }
+        }
+
+        if (!streamObtenido) {
+            regStatus.innerHTML = '<span style="color: var(--color-warning);"><i class="fas fa-triangle-exclamation"></i> Permiso bloqueado. Usa el botón "Cámara Celular"</span>';
+            httpBanner.style.display = 'block';
+            return;
+        }
+
+        stream = streamObtenido;
+        regVideo.srcObject = stream;
+        facingMode = mode;
+        if (mode === 'user') {
+            regVideo.style.transform = 'scaleX(-1)';
+        } else {
+            regVideo.style.transform = 'none';
+        }
+
+        try {
+            await regVideo.play();
+            regStatus.innerHTML = '<i class="fas fa-camera" style="color: var(--color-cyan);"></i> <span>Centra el rostro en el óvalo y pulsa "Capturar Foto"</span>';
+        } catch(playErr) {
+            console.warn('Play error en registro:', playErr);
+        }
+    }
+
+    btnToggleCam.addEventListener('click', () => {
+        iniciarCamara(facingMode === 'user' ? 'environment' : 'user');
+    });
+
+    btnTomarFoto.addEventListener('click', () => {
+        if (!regVideo.videoWidth) return;
+        regCanvas.width = regVideo.videoWidth;
+        regCanvas.height = regVideo.videoHeight;
+        const ctx = regCanvas.getContext('2d');
+        ctx.drawImage(regVideo, 0, 0, regCanvas.width, regCanvas.height);
+        
+        const dataUrl = regCanvas.toDataURL('image/jpeg', 0.92);
+        inputB64.value = dataUrl;
+
+        // Pausar video para congelar la foto capturada y mostrar éxito
+        regVideo.pause();
+        regOval.classList.add('success');
+
+        regStatus.innerHTML = '<span style="color: var(--color-success);"><i class="fas fa-check-circle"></i> Foto capturada correctamente</span>';
+        btnTomarFoto.style.display = 'none';
+        btnReintentar.style.display = 'inline-flex';
+        btnGuardar.disabled = false;
+        btnGuardar.style.opacity = '1';
+    });
+
+    function procesarFotoNativaRegistro(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result;
+            inputB64.value = dataUrl;
+
+            // Mostrar la imagen en el preview
+            regPreview.src = dataUrl;
+            regPreview.style.display = 'block';
+            regVideo.style.display = 'none';
+            regOval.classList.add('success');
+
+            regStatus.innerHTML = '<span style="color: var(--color-success);"><i class="fas fa-check-circle"></i> Foto cargada desde la cámara</span>';
+            btnTomarFoto.style.display = 'none';
+            btnReintentar.style.display = 'inline-flex';
+            btnGuardar.disabled = false;
+            btnGuardar.style.opacity = '1';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    btnReintentar.addEventListener('click', () => {
+        inputB64.value = '';
+        regNativeInput.value = '';
+        regPreview.style.display = 'none';
+        regVideo.style.display = 'block';
+        regOval.classList.remove('success');
+        if (regVideo.paused) regVideo.play();
+        regStatus.innerHTML = '<i class="fas fa-camera" style="color: var(--color-cyan);"></i> <span>Centra el rostro en el óvalo</span>';
+        btnTomarFoto.style.display = 'inline-flex';
+        btnReintentar.style.display = 'none';
+        btnGuardar.disabled = true;
+        btnGuardar.style.opacity = '0.5';
+    });
+
+    const initCamera = iniciarCamara;
+    document.addEventListener('DOMContentLoaded', () => {
+        iniciarCamara(facingMode);
+    });
+
+    window.addEventListener('beforeunload', () => {
+        if (stream) stream.getTracks().forEach(t => t.stop());
+    });
+</script>
 {% endblock %}

@@ -1,45 +1,259 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard | Asistencia Inteligente{% endblock %}
-{% block page_title %}Panel de Control{% endblock %}
-{% block welcome_text %}Bienvenido, {{ session.username }} — aquí tienes el resumen de hoy{% endblock %}
+{% block title %}Dashboard | {{ product_name }}{% endblock %}
+{% block page_title %}Panel de Inteligencia & Control{% endblock %}
+{% block welcome_text %}Bienvenido(a), {{ session.username }} — Resumen ejecutivo de la jornada actual{% endblock %}
 
 {% block content %}
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-header"><span class="stat-title">Registros totales</span><i class="fas fa-users stat-icon"></i></div>
-            <div class="stat-value" id="total-estudiantes">--</div>
-            {% if session.user_role == 'admin' %}
-            <div class="stat-trend" id="trend-total">Cargando...</div>
-            {% endif %}
+<!-- Grid de Tarjetas KPI -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-title">Personal Registrado</span>
+            <div class="kpi-icon-box kpi-icon-indigo">
+                <i class="fas fa-users-viewfinder"></i>
+            </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-header"><span class="stat-title">Asistencias hoy</span><i class="fas fa-check-circle stat-icon"></i></div>
-            <div class="stat-value" id="asistencias-hoy">--</div>
-            <div class="stat-trend" id="trend-asistencias">Cargando...</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-header"><span class="stat-title">Retrasos hoy</span><i class="fas fa-clock stat-icon"></i></div>
-            <div class="stat-value" id="retrasos-hoy">--</div>
-            <div class="stat-trend" id="trend-retrasos">Cargando...</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-header"><span class="stat-title">Tasa asistencia</span><i class="fas fa-percent stat-icon"></i></div>
-            <div class="stat-value" id="tasa-asistencia">--</div>
-            <div class="stat-trend" id="trend-tasa">Cargando...</div>
+        <div class="kpi-value" id="total-estudiantes">--</div>
+        <div class="kpi-trend" id="trend-total">
+            <i class="fas fa-database"></i> Base de datos activa
         </div>
     </div>
 
-    <div class="insight-grid">
-        <div class="chart-card">
-            <div class="card-header"><h3><i class="fas fa-chart-bar"></i> Asistencia última semana</h3><i class="fas fa-calendar-week"></i></div>
-            <canvas id="weeklyChart" width="400" height="200" style="max-height: 200px;"></canvas>
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-title">Asistencias Hoy</span>
+            <div class="kpi-icon-box kpi-icon-emerald">
+                <i class="fas fa-circle-check"></i>
+            </div>
         </div>
-        <div class="activity-card">
-            <div class="card-header"><h3><i class="fas fa-bell"></i> Actividad reciente</h3><i class="fas fa-ellipsis-h"></i></div>
-            <ul class="activity-list" id="activity-list">
-                <li class="activity-item">Cargando actividad...</li>
-            </ul>
+        <div class="kpi-value" id="asistencias-hoy" style="color: var(--color-success);">--</div>
+        <div class="kpi-trend" id="trend-asistencias">
+            <i class="fas fa-chart-line"></i> Calculando...
         </div>
     </div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-title">Incidencias de Horario</span>
+            <div class="kpi-icon-box kpi-icon-amber">
+                <i class="fas fa-clock-rotate-left"></i>
+            </div>
+        </div>
+        <div class="kpi-value" id="retrasos-hoy" style="color: var(--color-warning);">--</div>
+        <div class="kpi-trend" id="trend-retrasos">
+            <i class="fas fa-exclamation-circle"></i> Retrasos registrados
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-title">Tasa de Cumplimiento</span>
+            <div class="kpi-icon-box kpi-icon-cyan">
+                <i class="fas fa-percent"></i>
+            </div>
+        </div>
+        <div class="kpi-value" id="tasa-asistencia" style="color: var(--color-cyan);">--%</div>
+        <div class="kpi-trend" id="trend-tasa">
+            <i class="fas fa-calendar-days"></i> Últimos 7 días
+        </div>
+    </div>
+</div>
+
+<!-- Accesos Rápidos Interactivos -->
+<div class="quick-actions-grid">
+    <a href="{{ url_for('tomar_asistencia') }}" class="quick-action-tile tile-camera">
+        <div class="action-icon icon-camera"><i class="fas fa-camera"></i></div>
+        <div class="action-text">
+            <strong>Marcar Asistencia</strong>
+            <span>Escanear biometría con la cámara</span>
+        </div>
+        <i class="fas fa-chevron-right action-arrow"></i>
+    </a>
+    {% if session.user_role == 'admin' %}
+    <a href="{{ url_for('index') }}" class="quick-action-tile tile-enroll">
+        <div class="action-icon icon-enroll"><i class="fas fa-user-plus"></i></div>
+        <div class="action-text">
+            <strong>Registrar Personal</strong>
+            <span>Vincular nuevo empleado</span>
+        </div>
+        <i class="fas fa-chevron-right action-arrow"></i>
+    </a>
+    {% endif %}
+    <a href="{{ url_for('asistencia_listado') }}" class="quick-action-tile tile-history">
+        <div class="action-icon icon-history"><i class="fas fa-clipboard-list"></i></div>
+        <div class="action-text">
+            <strong>Historial de Jornada</strong>
+            <span>Ver registros y exportar reporte</span>
+        </div>
+        <i class="fas fa-chevron-right action-arrow"></i>
+    </a>
+</div>
+
+<!-- Gráfico de Tendencias y Actividad Reciente -->
+<div class="analytics-grid">
+    <div class="card-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-chart-column"></i> Frecuencia de Asistencia Semanal</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fas fa-sync-alt fa-spin"></i> Tiempo Real</span>
+        </div>
+        <div style="position: relative; height: 260px; width: 100%;">
+            <canvas id="weeklyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-clock"></i> Últimas Marcaciones</h3>
+            <a href="{{ url_for('asistencia_listado') }}" style="font-size: 0.8rem; color: var(--color-primary); text-decoration: none;">
+                Ver todas <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        <ul class="recent-activity-list" id="activity-list">
+            <li class="activity-item">
+                <i class="fas fa-spinner fa-spin" style="color: var(--color-cyan);"></i>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Cargando actividad...</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let weeklyChart = null;
+
+    // Carga de KPIs y Métricas en Vivo
+    async function cargarEstadisticas() {
+        try {
+            const res = await fetch('/api/stats');
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            document.getElementById('total-estudiantes').innerText = data.total_estudiantes || 0;
+            document.getElementById('asistencias-hoy').innerText = data.asistencias_hoy || 0;
+            document.getElementById('retrasos-hoy').innerText = data.retrasos_hoy || 0;
+            document.getElementById('tasa-asistencia').innerText = (data.tasa_asistencia || 0) + '%';
+            
+            const trendAsist = document.getElementById('trend-asistencias');
+            if (trendAsist) {
+                trendAsist.innerHTML = `<i class="fas fa-arrow-trend-up"></i> ${Math.round(data.tasa_asistencia || 0)}% de asistencia activa`;
+            }
+        } catch (e) {
+            console.error('Error estadísticas:', e);
+        }
+    }
+    const loadStats = cargarEstadisticas;
+
+    // Carga del Gráfico de Frecuencia Semanal
+    async function cargarGraficoSemanal() {
+        try {
+            const res = await fetch('/api/weekly');
+            if (!res.ok) return;
+            const data = await res.json();
+            const ctx = document.getElementById('weeklyChart').getContext('2d');
+            
+            if (weeklyChart) weeklyChart.destroy();
+            
+            // Gradiente Indigo para las barras
+            const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+            gradient.addColorStop(0, '#6366F1');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.2)');
+
+            weeklyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Marcaciones',
+                        data: data.data,
+                        backgroundColor: gradient,
+                        borderColor: '#6366F1',
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        barPercentage: 0.55
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#111827',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            titleColor: '#F9FAFB',
+                            bodyColor: '#9CA3AF',
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#9CA3AF', stepSize: 1 },
+                            beginAtZero: true
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#9CA3AF' }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Error en gráfico semanal:', e);
+        }
+    }
+    const loadWeekly = cargarGraficoSemanal;
+
+    // Carga de la Actividad Reciente del Día
+    async function cargarActividadReciente() {
+        const list = document.getElementById('activity-list');
+        if (!list) return;
+        try {
+            const res = await fetch('/api/recent-activity');
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            if (!Array.isArray(data) || data.length === 0) {
+                list.innerHTML = '<li class="activity-item"><span style="color: var(--text-muted); font-size: 0.85rem;">No hay marcaciones el día de hoy</span></li>';
+                return;
+            }
+
+            list.innerHTML = data.map(act => {
+                let badgeClass = 'badge-temprano';
+                if (act.estado_clase === 'retraso') badgeClass = 'badge-retraso';
+                else if (act.estado_clase === 'salida') badgeClass = 'badge-salida';
+
+                return `
+                    <li class="activity-item">
+                        <div class="activity-left">
+                            <div class="activity-avatar"><i class="fas fa-user-check"></i></div>
+                            <div class="activity-text">
+                                <div class="activity-name">${act.nombre}</div>
+                                <div class="activity-time">${act.tiempo}</div>
+                            </div>
+                        </div>
+                        <span class="badge-pill ${badgeClass}">${act.estado_texto}</span>
+                    </li>
+                `;
+            }).join('');
+        } catch (e) {
+            console.error('Error actividad reciente:', e);
+        }
+    }
+    const loadRecentActivity = cargarActividadReciente;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarEstadisticas();
+        cargarGraficoSemanal();
+        cargarActividadReciente();
+        setInterval(() => {
+            cargarEstadisticas();
+            cargarActividadReciente();
+        }, 15000); // Refresco cada 15 segundos
+        setInterval(cargarGraficoSemanal, 120000);
+    });
+</script>
 {% endblock %}

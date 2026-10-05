@@ -1,56 +1,106 @@
 {% extends "base.html" %}
 
-{% block title %}Configuración del Sistema{% endblock %}
-{% block page_title %}Configurar Horarios{% endblock %}
-{% block welcome_text %}Establece las horas de asistencia y almuerzo{% endblock %}
+{% block title %}Configuración de Horarios | {{ product_name }}{% endblock %}
+{% block page_title %}Parámetros de Jornada & Horarios{% endblock %}
+{% block welcome_text %}Define las reglas de puntualidad, tolerancias y descansos de la organización{% endblock %}
 
 {% block content %}
-<div class="admin-grid">
-    <div class="stat-card admin-form-card">
-        <h3><i class="fas fa-clock"></i> Horarios de asistencia</h3>
+<div class="admin-grid-2">
+    
+    <!-- Formulario de Configuración -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-business-time"></i> Reglas de Horario</h3>
+            <span style="font-size: 0.75rem; color: var(--color-cyan);"><i class="fas fa-sync"></i> En vigor</span>
+        </div>
+
         <form method="POST" action="{{ url_for('admin_configuracion') }}">
-            <div class="admin-form-group">
-                <label>Hora de inicio (entrada permitida desde)</label>
-                <input type="time" name="hora_inicio" value="{{ hora_inicio }}" class="filtro-input" required step="60">
-                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 08:00</small>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                    Hora de Inicio (Entrada permitida desde)
+                </label>
+                <input type="time" name="hora_inicio" value="{{ hora_inicio }}" class="form-input" required step="60">
+                <small style="color: var(--text-subtle); font-size: 0.75rem;">Apertura del registro matutino (ej. 08:00)</small>
             </div>
-            <div class="admin-form-group">
-                <label>Hora límite (hasta cuándo se considera "Temprano")</label>
-                <input type="time" name="hora_limite" value="{{ hora_limite }}" class="filtro-input" required step="60">
-                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 08:05</small>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                    Hora Límite de Puntualidad (Tolerancia máxima)
+                </label>
+                <input type="time" name="hora_limite" value="{{ hora_limite }}" class="form-input" required step="60">
+                <small style="color: var(--text-subtle); font-size: 0.75rem;">Hasta esta hora se califica como "A tiempo"</small>
             </div>
-            <div class="admin-form-group">
-                <label>Hora de cierre (última entrada permitida)</label>
-                <input type="time" name="hora_final" value="{{ hora_final }}" class="filtro-input" required step="60">
-                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 17:00</small>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                    Hora de Cierre (Última entrada permitida)
+                </label>
+                <input type="time" name="hora_final" value="{{ hora_final }}" class="form-input" required step="60">
+                <small style="color: var(--text-subtle); font-size: 0.75rem;">Posterior a esta hora se marca como "Fuera de horario"</small>
             </div>
-            <div class="admin-form-group">
-                <label>Hora de salida a almuerzo (fija)</label>
-                <input type="time" name="hora_salida_almuerzo" value="{{ hora_salida_almuerzo }}" class="filtro-input" required step="60">
-                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 12:00</small>
+
+            <div class="form-grid-2" style="margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                        Salida Almuerzo
+                    </label>
+                    <input type="time" name="hora_salida_almuerzo" value="{{ hora_salida_almuerzo }}" class="form-input" required step="60">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+                        Regreso Almuerzo
+                    </label>
+                    <input type="time" name="hora_regreso_almuerzo" value="{{ hora_regreso_almuerzo }}" class="form-input" required step="60">
+                </div>
             </div>
-            <div class="admin-form-group">
-                <label>Hora de regreso de almuerzo (fija)</label>
-                <input type="time" name="hora_regreso_almuerzo" value="{{ hora_regreso_almuerzo }}" class="filtro-input" required step="60">
-                <small class="form-text text-muted" style="color:#94a3b8;">Ejemplo: 13:00</small>
-            </div>
-            <button type="submit" class="admin-btn-crear">
-                <i class="fas fa-save"></i> Guardar Cambios
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                <i class="fas fa-floppy-disk"></i> Guardar Cambios
             </button>
         </form>
     </div>
-    <div class="stat-card">
-        <h3><i class="fas fa-chart-line"></i> Horario actual</h3>
-        <p style="font-size: 0.9rem; color: #cbd5e1;">Las asistencias se registrarán según:</p>
-        <ul style="list-style: none; padding: 0;">
-            <li><i class="fas fa-play-circle" style="color: #4ade80;"></i> <strong>Entrada temprana:</strong> Hasta las {{ hora_limite }}</li>
-            <li><i class="fas fa-clock" style="color: #fbbf24;"></i> <strong>Entrada tarde:</strong> Desde después de {{ hora_limite }} hasta {{ hora_final }}</li>
-            <li><i class="fas fa-ban" style="color: #f87171;"></i> <strong>Fuera de horario:</strong> Después de {{ hora_final }}</li>
-            <li><i class="fas fa-utensils" style="color: #60a5fa;"></i> <strong>Almuerzo:</strong> Desde {{ hora_salida_almuerzo }} hasta {{ hora_regreso_almuerzo }} (fijo para todos)</li>
-        </ul>
-        <p class="asistencia-info" style="margin-top: 1rem;">
-            <i class="fas fa-sync-alt"></i> Los cambios surten efecto inmediatamente.
+
+    <!-- Panel Informativo de Clasificación -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-circle-info"></i> Lógica de Clasificación</h3>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+            Cada marcación capturada por la cámara del celular o computador se clasificará automáticamente según los siguientes rangos:
         </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+            <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                <span class="badge-pill badge-temprano" style="margin-top: 2px;">A tiempo</span>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    Marcaciones registradas entre las <strong>{{ hora_inicio | hora12(False) }}</strong> y las <strong>{{ hora_limite | hora12(False) }}</strong>.
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                <span class="badge-pill badge-retraso" style="margin-top: 2px;">Retraso</span>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    Marcaciones registradas después de las <strong>{{ hora_limite | hora12(False) }}</strong> hasta las <strong>{{ hora_final | hora12(False) }}</strong>.
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                <span class="badge-pill badge-fuera" style="margin-top: 2px;">Fuera de horario</span>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    Marcaciones posteriores a las <strong>{{ hora_final | hora12(False) }}</strong>.
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                <span class="badge-pill badge-salida" style="margin-top: 2px;">Almuerzo</span>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    Horario de descanso configurado de <strong>{{ hora_salida_almuerzo | hora12(False) }}</strong> a <strong>{{ hora_regreso_almuerzo | hora12(False) }}</strong>.
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

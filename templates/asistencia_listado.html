@@ -1,76 +1,271 @@
 {% extends "base.html" %}
 
-{% block title %}Listado de Asistencias{% endblock %}
-{% block page_title %}Historial de Asistencias{% endblock %}
-{% block welcome_text %}Registros de entrada, salida y almuerzo (horario fijo){% endblock %}
+{% block title %}Control de Asistencias | {{ product_name }}{% endblock %}
+{% block page_title %}Control de Asistencias y Jornada{% endblock %}
+{% block welcome_text %}Historial cronológico de registros de entrada, salida y puntualidad{% endblock %}
 
 {% block content %}
-<div class="filtros-panel">
-    <div class="filtros-grid">
-        <div class="filtro-item">
-            <label class="filtro-label">Buscar (nombre)</label>
-            <input type="text" id="filterName" class="filtro-input" placeholder="Nombre o apellido">
+<div class="card-panel" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+    <!-- Filtros de Búsqueda -->
+    <div class="filter-grid">
+        <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem;">
+                Buscar Empleado
+            </label>
+            <input type="text" id="filterName" class="form-input" placeholder="Nombre o apellido...">
         </div>
-        <div class="filtro-item">
-            <label class="filtro-label">Estado</label>
-            <select id="filterStatus" class="filtro-select">
-                <option value="all">Todos</option>
-                <option value="Temprano">A tiempo</option>
-                <option value="Tarde">Retraso</option>
+        <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem;">
+                Estado
+            </label>
+            <select id="filterStatus" class="form-input" style="cursor: pointer;">
+                <option value="all">Todos los estados</option>
+                <option value="Temprano">A tiempo (Temprano)</option>
+                <option value="Tarde">Retraso (Tarde)</option>
+                <option value="Salida">Salida Registrada</option>
+                <option value="SinSalida">Pendiente de Salida (Aún en turno)</option>
             </select>
         </div>
-        <div class="filtro-item">
-            <label class="filtro-label">Fecha</label>
-            <input type="date" id="filterDate" class="filtro-input">
+        <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem;">
+                Fecha
+            </label>
+            <input type="date" id="filterDate" class="form-input">
         </div>
-        <div class="filtro-item">
-            <button id="clearFilters" class="filtro-btn-limpiar">Limpiar</button>
-        </div>
-        <div class="filtro-item">
-            <button id="exportExcelBtn" class="filtro-btn-exportar">Exportar a Excel</button>
+        <div style="display: flex; gap: 0.5rem;">
+            <button id="clearFilters" class="btn-secondary" style="flex: 1; justify-content: center;">
+                <i class="fas fa-rotate-left"></i> Limpiar
+            </button>
+            <button id="exportExcelBtn" class="btn-primary" style="flex: 1; justify-content: center;">
+                <i class="fas fa-file-excel"></i> Exportar
+            </button>
         </div>
     </div>
-    <div id="filterResultCount" class="filtro-contador"></div>
+    <div style="display: flex; gap: 0.5rem; margin-top: 0.85rem; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
+        <span style="font-size: 0.75rem; color: var(--text-subtle);"><i class="fas fa-bolt"></i> Filtro rápido:</span>
+        <button type="button" class="btn-chip" id="chipHoy">Hoy</button>
+        <button type="button" class="btn-chip" id="chipTodos">Ver Todos</button>
+        <span id="filterResultCount" style="margin-left: auto; font-size: 0.8rem; color: var(--text-muted);"></span>
+    </div>
 </div>
 
-<div class="table-responsive">
-    <table class="data-table" id="asistenciaTable">
+<!-- Indicador Táctil Móvil -->
+<div class="table-scroll-hint">
+    <i class="fas fa-arrows-left-right"></i>
+    <span>Desliza horizontalmente para ver todas las columnas</span>
+</div>
+
+<!-- Tabla de Registros -->
+<div class="table-container">
+    <table class="modern-table" id="asistenciaTable">
         <thead>
             <tr>
-                <th>Nombre</th>
-                <th>Apellido</th>
+                <th>Empleado</th>
                 <th>Fecha</th>
-                <th>Hora Entrada</th>
-                <th>Hora Salida</th>
-                <th>Estado</th>
-                <th>Salida Almuerzo</th>
-                <th>Regreso Almuerzo</th>
+                <th>Entrada</th>
+                <th>Salida</th>
+                <th>Estado de Ingreso</th>
+                <th>Horario Almuerzo</th>
             </tr>
         </thead>
         <tbody>
             {% for a in asistencia %}
-            <tr data-estado="{{ a[5] }}" data-fecha="{{ a[2] }}">
-                <td>{{ a[0] }}</td>
-                <td>{{ a[1] }}</td>
-                <td>{{ a[2] }}</td>
-                <td>{{ a[3] }}</td>
-                <td>{{ a[4] if a[4] else '--:--' }}</td>
+            <tr data-estado="{{ a[5] }}" data-fecha="{{ a[2] }}" data-tiene-salida="{{ 'si' if a[4] else 'no' }}">
                 <td>
-                    {% if a[5] == 'Temprano' %}
-                        <span class="estado-temprano">✓ A tiempo</span>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div class="activity-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">{{ a[0] }} {{ a[1] }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-subtle);">ID #{{ a[6] }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td style="font-feature-settings: 'tnum';">{{ a[2] }}</td>
+                <td style="font-feature-settings: 'tnum'; font-weight: 600; color: var(--color-cyan);">
+                    <i class="far fa-clock" style="font-size: 0.8rem; margin-right: 4px;"></i> {{ a[3] | hora12 }}
+                </td>
+                <td style="font-feature-settings: 'tnum';">
+                    {% if a[4] %}
+                        <span style="color: var(--color-emerald); font-weight: 600;">
+                            <i class="fas fa-arrow-right-from-bracket" style="font-size: 0.75rem; margin-right: 4px;"></i>{{ a[4] | hora12 }}
+                        </span>
                     {% else %}
-                        <span class="estado-retraso">⚠ Retraso</span>
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">
+                            <i class="far fa-clock" style="font-size: 0.75rem; margin-right: 3px; opacity: 0.6;"></i>--:--
+                        </span>
                     {% endif %}
                 </td>
-                <td class="almuerzo-salida">{{ salida_almuerzo }}</td>
-                <td class="almuerzo-regreso">{{ regreso_almuerzo }}</td>
+                <td>
+                    {% if a[5] == 'Temprano' or a[5] == 'presente' %}
+                        <span class="badge-pill badge-temprano">A tiempo</span>
+                    {% elif a[5] == 'Tarde' or a[5] == 'tarde' %}
+                        <span class="badge-pill badge-retraso">Retraso</span>
+                    {% elif a[5] == 'Salida' %}
+                        <span class="badge-pill badge-salida">Salida</span>
+                    {% else %}
+                        <span class="badge-pill badge-fuera">{{ a[5] }}</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.8rem; color: var(--text-muted); font-feature-settings: 'tnum';">
+                    {{ salida_almuerzo }} - {{ regreso_almuerzo }}
+                </td>
             </tr>
             {% else %}
             <tr id="noDataRow">
-                <td colspan="8">No hay registros de asistencia.</td>
+                <td colspan="6" style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+                    <i class="fas fa-calendar-xmark" style="font-size: 2rem; margin-bottom: 0.75rem; display: block; opacity: 0.4;"></i>
+                    No se han registrado asistencias aún.
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const filterName = document.getElementById('filterName');
+    const filterStatus = document.getElementById('filterStatus');
+    const filterDate = document.getElementById('filterDate');
+    const clearBtn = document.getElementById('clearFilters');
+    const resultCount = document.getElementById('filterResultCount');
+    const table = document.getElementById('asistenciaTable');
+    const tbody = table ? table.querySelector('tbody') : null;
+
+    if (!tbody) return;
+
+    let filas = Array.from(tbody.querySelectorAll('tr')).filter(r => r.id !== 'noDataRow');
+    const rows = filas;
+
+    function normalizarTexto(str) {
+        return (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+    const normalizeText = normalizarTexto;
+
+    function aplicarFiltros() {
+        const nameVal = normalizarTexto(filterName.value);
+        const statusVal = filterStatus.value;
+        const dateVal = filterDate.value;
+        let count = 0;
+
+        filas.forEach(row => {
+            const text = normalizarTexto(row.cells[0].textContent);
+            const fecha = row.getAttribute('data-fecha') || '';
+            const estado = row.getAttribute('data-estado') || '';
+            const tieneSalida = row.getAttribute('data-tiene-salida') || 'no';
+
+            let match = true;
+            if (nameVal && !text.includes(nameVal)) match = false;
+
+            if (statusVal !== 'all') {
+                if (statusVal === 'Salida') {
+                    // Mostrar empleados que ya tienen salida registrada
+                    if (tieneSalida !== 'si' && !normalizarTexto(estado).includes('salida')) {
+                        match = false;
+                    }
+                } else if (statusVal === 'SinSalida') {
+                    // Mostrar empleados que siguen en turno (pendiente de salida)
+                    if (tieneSalida === 'si') {
+                        match = false;
+                    }
+                } else {
+                    // Filtrar por puntualidad ('Temprano', 'Tarde', etc.)
+                    if (!normalizarTexto(estado).includes(normalizarTexto(statusVal))) {
+                        match = false;
+                    }
+                }
+            }
+
+            if (dateVal && fecha !== dateVal) match = false;
+
+            if (match) {
+                row.style.display = '';
+                count++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (resultCount) {
+            resultCount.textContent = `Mostrando ${count} de ${filas.length} registros`;
+        }
+    }
+    const applyFilters = aplicarFiltros;
+
+    filterName.addEventListener('input', aplicarFiltros);
+    filterStatus.addEventListener('change', aplicarFiltros);
+    filterDate.addEventListener('change', aplicarFiltros);
+    clearBtn.addEventListener('click', () => {
+        filterName.value = '';
+        filterStatus.value = 'all';
+        filterDate.value = '';
+        aplicarFiltros();
+    });
+
+    const chipHoy = document.getElementById('chipHoy');
+    const chipTodos = document.getElementById('chipTodos');
+    if (chipHoy) {
+        chipHoy.addEventListener('click', () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            filterDate.value = `${year}-${month}-${day}`;
+            applyFilters();
+        });
+    }
+    if (chipTodos) {
+        chipTodos.addEventListener('click', () => {
+            filterName.value = '';
+            filterStatus.value = 'all';
+            filterDate.value = '';
+            applyFilters();
+        });
+    }
+
+    applyFilters();
+
+    // Exportar a CSV / Excel
+    const exportBtn = document.getElementById('exportExcelBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            const visible = rows.filter(r => r.style.display !== 'none');
+            if (visible.length === 0) {
+                alert('No hay registros visibles para exportar.');
+                return;
+            }
+            const headers = ['Empleado', 'Fecha', 'Hora Entrada', 'Hora Salida', 'Estado'];
+            const data = visible.map(r => {
+                const cells = r.querySelectorAll('td');
+                return [
+                    cells[0].innerText.replace(/\n/g, ' ').trim(),
+                    cells[1].innerText.trim(),
+                    cells[2].innerText.trim(),
+                    cells[3].innerText.trim(),
+                    cells[4].innerText.trim()
+                ];
+            });
+
+            const csv = [
+                headers.join(','),
+                ...data.map(row => row.map(c => `"${c.replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `asistencias_nexum_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+});
+</script>
 {% endblock %}
